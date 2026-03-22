@@ -1,0 +1,24 @@
+<svg width="380" height="120" viewBox="0 0 380 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="pg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0891b2"/>
+      <stop offset="100%" stop-color="#22d3ee"/>
+    </linearGradient>
+  </defs>
+  <!-- Icon -->
+  <rect x="0" y="0" width="80" height="80" rx="18" fill="url(#pg)"/>
+  <path d="M22 56C26 36 36 20 50 18C56 18 60 24 54 32C46 42 30 48 22 56Z" fill="white" opacity="0.87"/>
+  <path d="M22 56Q28 58 38 62" stroke="white" stroke-width="2.2" stroke-linecap="round" fill="none" opacity="0.5"/>
+  <circle cx="40" cy="63" r="1.8" fill="white" opacity="0.4"/>
+  <!-- Wordmark -->
+  <text font-family="Inter, system-ui, -apple-system, sans-serif" font-size="44" font-weight="500" fill="#111827" letter-spacing="-2" x="96" y="53">pen</text>
+  <!-- Pen separator -->
+  <g transform="translate(170, 18)">
+    <path d="M10 3L4 26" stroke="#0891b2" stroke-width="2.8" stroke-linecap="round"/>
+    <path d="M2 27.5L4 26L2.5 31Z" fill="#0891b2" opacity="0.85"/>
+    <circle cx="1.2" cy="32.5" r="1.2" fill="#0891b2" opacity="0.4"/>
+  </g>
+  <text font-family="Inter, system-ui, -apple-system, sans-serif" font-size="44" font-weight="500" fill="#0891b2" letter-spacing="-2" x="184" y="53">mark</text>
+  <!-- Tagline -->
+  <text font-family="Inter, system-ui, -apple-system, sans-serif" font-size="13" font-weight="400" fill="#9ca3af" letter-spacing="0.5" x="98" y="76">Write. Publish. Repeat.</text>
+</svg>
