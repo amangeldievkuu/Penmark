@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { createPost } from '~/server/functions/posts'
 import { TiptapEditor } from '~/components/editor/TiptapEditor'
 import { ImageUpload } from '~/components/common/ImageUpload'
@@ -8,9 +8,10 @@ import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Textarea } from '~/components/ui/textarea'
 import { useToast } from '~/components/ui/toast'
+import { useKyrgyzFieldTransliteration } from '~/hooks/use-kyrgyz-field-transliteration'
 import { slugify } from '~/lib/utils'
 import { getAuthHeaders } from '~/lib/auth-headers'
-import { Save, Eye, Loader2 } from 'lucide-react'
+import { Loader2, Save } from 'lucide-react'
 
 export const Route = createFileRoute('/admin/posts/new')({
   component: NewPostPage,
@@ -30,6 +31,17 @@ function NewPostPage() {
   const [published, setPublished] = useState(false)
   const [content, setContent] = useState<Record<string, unknown>>({})
   const [slugEdited, setSlugEdited] = useState(false)
+  const [kyrgyzTypingEnabled, setKyrgyzTypingEnabled] = useState(false)
+  const titleTransliteration = useKyrgyzFieldTransliteration<HTMLInputElement>(
+    kyrgyzTypingEnabled,
+    title,
+    setTitle,
+  )
+  const excerptTransliteration = useKyrgyzFieldTransliteration<HTMLTextAreaElement>(
+    kyrgyzTypingEnabled,
+    excerpt,
+    setExcerpt,
+  )
 
   useEffect(() => {
     if (!slugEdited) {
@@ -79,6 +91,13 @@ function NewPostPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">New Post</h1>
         <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant={kyrgyzTypingEnabled ? 'default' : 'outline'}
+            onClick={() => setKyrgyzTypingEnabled((current) => !current)}
+          >
+            {kyrgyzTypingEnabled ? 'Kyrgyz typing on' : 'Kyrgyz typing off'}
+          </Button>
           <label className="flex items-center gap-2 text-sm">
             <input
               type="checkbox"
@@ -101,6 +120,7 @@ function NewPostPage() {
 
         {/* Title */}
         <input
+          ref={titleTransliteration.fieldRef}
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -121,6 +141,7 @@ function NewPostPage() {
 
         {/* Excerpt */}
         <Textarea
+          ref={excerptTransliteration.fieldRef}
           value={excerpt}
           onChange={(e) => setExcerpt(e.target.value)}
           placeholder="Write a brief excerpt..."
@@ -130,12 +151,29 @@ function NewPostPage() {
         {/* Tags */}
         <div>
           <label className="text-sm font-medium mb-1.5 block">Tags</label>
-          <TagInput value={tags} onChange={setTags} />
+          <TagInput
+            value={tags}
+            onChange={setTags}
+            kyrgyzTransliteration={kyrgyzTypingEnabled}
+          />
         </div>
 
-        {/* Editor */}
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <label className="text-sm font-medium block">Content</label>
+            <p className="text-xs text-[hsl(var(--muted-foreground))]">
+              Kyrgyz typing transliterates the title, tags, excerpt, and content. Use Latin input like
+              `ng`, `oe`, `ue`, `sh`, `ch`, `j`, `y`, and `eh`.
+            </p>
+          </div>
+        </div>
+
         <div className="min-h-[400px] rounded-lg border border-[hsl(var(--border))] p-4">
-          <TiptapEditor content={content} onChange={setContent} />
+          <TiptapEditor
+            content={content}
+            onChange={setContent}
+            kyrgyzTransliteration={kyrgyzTypingEnabled}
+          />
         </div>
       </div>
     </div>

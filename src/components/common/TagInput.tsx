@@ -2,16 +2,29 @@ import { useState, type KeyboardEvent } from 'react'
 import { X } from 'lucide-react'
 import { cn } from '~/lib/utils'
 import { Badge } from '~/components/ui/badge'
+import { useKyrgyzFieldTransliteration } from '~/hooks/use-kyrgyz-field-transliteration'
 
 interface TagInputProps {
   value: string[]
   onChange: (tags: string[]) => void
   placeholder?: string
   className?: string
+  kyrgyzTransliteration?: boolean
 }
 
-export function TagInput({ value, onChange, placeholder = 'Add tag...', className }: TagInputProps) {
+export function TagInput({
+  value,
+  onChange,
+  placeholder = 'Add tag...',
+  className,
+  kyrgyzTransliteration = false,
+}: TagInputProps) {
   const [input, setInput] = useState('')
+  const inputTransliteration = useKyrgyzFieldTransliteration<HTMLInputElement>(
+    kyrgyzTransliteration,
+    input,
+    setInput,
+  )
 
   const addTag = (tag: string) => {
     const trimmed = tag.trim().toLowerCase()
@@ -55,6 +68,7 @@ export function TagInput({ value, onChange, placeholder = 'Add tag...', classNam
         </Badge>
       ))}
       <input
+        ref={inputTransliteration.fieldRef}
         type="text"
         value={input}
         onChange={(e) => setInput(e.target.value)}

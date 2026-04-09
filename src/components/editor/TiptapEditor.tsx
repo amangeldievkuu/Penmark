@@ -13,20 +13,27 @@ import TableRow from '@tiptap/extension-table-row'
 import TableCell from '@tiptap/extension-table-cell'
 import TableHeader from '@tiptap/extension-table-header'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
-import TextStyle from '@tiptap/extension-text-style'
-import Color from '@tiptap/extension-color'
 import { common, createLowlight } from 'lowlight'
 import { SlashCommandMenu } from './SlashCommandMenu'
 import { FloatingToolbar } from './FloatingToolbar'
 import { uploadImage } from '~/lib/storage'
+import { sanitizeRichTextContent } from '~/lib/utils'
+import { isLatinTransliterationInput, transliterateLatinToKyrgyz } from '~/lib/kyrgyz-transliteration'
 
 const lowlight = createLowlight(common)
+
+type TransliterationBuffer = {
+  from: number
+  raw: string
+  rendered: string
+}
 
 interface TiptapEditorProps {
   content: Record<string, unknown>
   onChange: (content: Record<string, unknown>) => void
   onImageUpload?: (file: File) => Promise<string>
   editable?: boolean
+  kyrgyzTransliteration?: boolean
 }
 
 export function TiptapEditor({
@@ -34,16 +41,24 @@ export function TiptapEditor({
   onChange,
   onImageUpload,
   editable = true,
+  kyrgyzTransliteration = false,
 }: TiptapEditorProps) {
   const [slashOpen, setSlashOpen] = useState(false)
   const [slashPosition, setSlashPosition] = useState({ top: 0, left: 0 })
   const slashPosRef = useRef<number | null>(null)
   const slashOpenRef = useRef(false)
+  const transliterationBufferRef = useRef<TransliterationBuffer | null>(null)
 
   // Keep ref in sync so the stale handleKeyDown closure reads current value
   useEffect(() => {
     slashOpenRef.current = slashOpen
   }, [slashOpen])
+
+  useEffect(() => {
+    transliterationBufferRef.current = null
+  }, [kyrgyzTransliteration])
+
+  const sanitizedContent = sanitizeRichTextContent(content)
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -86,10 +101,8 @@ export function TiptapEditor({
       CodeBlockLowlight.configure({
         lowlight,
       }),
-      TextStyle,
-      Color,
     ],
-    content: content && Object.keys(content).length > 0 ? content : undefined,
+    content: Object.keys(sanitizedContent).length > 0 ? sanitizedContent : undefined,
     editable,
     onUpdate: ({ editor: e }) => {
       onChange(e.getJSON() as Record<string, unknown>)
@@ -98,7 +111,59 @@ export function TiptapEditor({
       attributes: {
         class: 'tiptap prose-container focus:outline-none',
       },
+      handleTextInput: (view, from, to, text) => {
+        if (!kyrgyzTransliteration) {
+          transliterationBufferRef.current = null
+          return false
+        }
+
+        if (!isLatinTransliterationInput(text)) {
+          transliterationBufferRef.current = null
+          return false
+        }
+
+        const previousBuffer = transliterationBufferRef.current
+        const canExtendBuffer = Boolean(
+          previousBuffer &&
+          to === from &&
+          from === previousBuffer.from + previousBuffer.rendered.length,
+        )
+
+        const rawInput = canExtendBuffer && previousBuffer
+          ? `${previousBuffer.raw}${text}`
+          : text
+        const renderedInput = transliterateLatinToKyrgyz(rawInput)
+        const replaceFrom = canExtendBuffer && previousBuffer ? previousBuffer.from : from
+        const replaceTo = canExtendBuffer && previousBuffer
+          ? previousBuffer.from + previousBuffer.rendered.length
+          : to
+
+        view.dispatch(view.state.tr.insertText(renderedInput, replaceFrom, replaceTo))
+        transliterationBufferRef.current = {
+          from: replaceFrom,
+          raw: rawInput,
+          rendered: renderedInput,
+        }
+        return true
+      },
       handleKeyDown: (_view, event) => {
+        if (
+          kyrgyzTransliteration &&
+          (
+            event.key === 'Backspace' ||
+            event.key === 'Delete' ||
+            event.key === 'Enter' ||
+            event.key === 'Tab' ||
+            event.key.startsWith('Arrow')
+          )
+        ) {
+          transliterationBufferRef.current = null
+        }
+
+        if (kyrgyzTransliteration && event.key.length === 1 && !/[A-Za-z]/.test(event.key)) {
+          transliterationBufferRef.current = null
+        }
+
         if (event.key === '/' && !slashOpenRef.current) {
           const domSelection = window.getSelection()
           if (domSelection && domSelection.rangeCount > 0) {
